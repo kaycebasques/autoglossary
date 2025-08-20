@@ -1,7 +1,9 @@
 from pathlib import Path
 from string import Template
 from threading import Thread
+from typing_extensions import TypedDict
 import glob
+import json
 import subprocess
 import sys
 
@@ -10,12 +12,34 @@ import tomlkit
 
 
 REPO_NAME = "repo"
+CHECKPOINTS_FILE = "checkpoint.json"
+GLOSSARY_FILE = "glossary.json"
 
 
 def get_config():
     with open("config.toml", "r") as f:
         config = tomlkit.parse(f.read())
     return config
+
+
+def get_checkpoints():
+    with open(CHECKPOINTS_FILE, "r") as f:
+        return json.load(f)
+
+
+def save_checkpoints(data):
+    with open(CHECKPOINTS_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def get_glossary():
+    with open(GLOSSARY_FILE, "r") as f:
+        return json.load(f)
+
+
+def save_glossary(data):
+    with open(GLOSSARY_FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
 
 def run(command):
@@ -31,6 +55,8 @@ def setup_repo():
     if not Path(REPO_NAME).exists():
         print("[INFO] No repo found, cloning new")
         clone(config["repo"])
+        save_checkpoints([])
+        save_glossary({})
         return
     result = run(["git", "-C", REPO_NAME, "remote", "get-url", "origin"])
     url = result.stdout.strip()
@@ -39,6 +65,8 @@ def setup_repo():
         return
     print("[INFO] Removing old repo and cloning new")
     shutil.rmtree(REPO_NAME)
+    save_checkpoints([])
+    save_glossary({})
     clone(config["repo"])
 
 
@@ -65,27 +93,59 @@ def list_docs():
     return rst + md
 
 
-def analyze(template, doc):
-    # TODO: Checkpoints
-    print(doc)
+def populate(template, doc, glossary, guidelines):
+    with open(doc, "r") as f:
+        src = f.read()
+    start = len(f"{REPO_NAME}/")
+    doc = doc[start:]
+    prompt = template.substitute(doc=doc, src=src, glossary=glossary, guidelines=guidelines)
+    class Term(TypedDict):
+        id: str
+        title: str
+        summary: str
+        details: str | None
+        references: list[str]
+    config = {
+        "response_mime_type": "application/json",
+        "response_schema": list[Term]
+    }
+    gemini = genai.Client()
+    response = gemini.models.generate_content(
+        model="gemini-2.5-pro", contents=prompt, config=config
+    )
+    results: Response = response.parsed
+    return results
 
 
 def process(docs):
     template = load_template()
-    start = 0
-    max_threads = 10
-    while start < len(docs):
-        threads = []
-        for i in range(start, start + max_threads):
-            if i >= len(docs):
-                continue
-            doc = docs[i]
-            thread = Thread(target=analyze, kwargs={"template": template, "doc": doc})
-            threads.append(thread)
-            thread.start()
-        for thread in threads:
-            thread.join()
-        start += max_threads
+    checkpoints = get_checkpoints()
+    glossary = get_glossary()
+    config = get_config()
+    guidelines = config["guidelines"]
+    for doc in docs:
+        if doc in checkpoints:
+            continue
+        print("=" * len(doc))
+        print(doc)
+        print("=" * len(doc))
+        terms = populate(template, doc, glossary, guidelines)
+        for term in terms:
+            glossary[term["id"]] = {
+                "title": term["title"],
+                "summary": term["summary"],
+                "details": term["details"],
+                "references": term["references"]
+            }
+            print(f"id: {term['id']}")
+            print(f"title: {term['title']}")
+            print(f"summary: {term['summary']}")
+            print(f"details: {term['details']}")
+            print(f"references: {term['references']}")
+            print("----------")
+        checkpoints.append(doc)
+        save_checkpoints(checkpoints)
+        save_glossary(glossary)
 
 
 setup_repo()

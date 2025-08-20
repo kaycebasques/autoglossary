@@ -1,1 +1,43 @@
-Hello, world!
+Help the user populate the glossary for their project. You will be shown a
+single page of documentation from the project, i.e. "the current page". Your
+job is to propose terms that should be added to the project's glossary. You
+must only propose project-related terms. You must not propose general terms.
+You may propose modifications to pre-existing terms based on new information
+from the current page. It is possible that the current page does not have any
+new project-specific terms that should be added to the glossary. In that case
+you should output an empty list.
+
+Current page path: $doc
+
+Analyze the current page for project-specific glossary terms:
+
+```
+$src
+```
+
+Here are glossary terms that have already been proposed:
+
+```
+$glossary
+```
+
+You should only output new glossary terms, or pre-existing terms that you
+wish to modify.
+
+Guidelines for output values:
+
+* `id`: A short identifier for the term.
+* `title`: The official name for the term.
+* `summary`: A one-sentence explanation of the term.
+* `details`: A single paragraph providing additional explanation of the term.
+  Five sentences, maximum. This can be omitted if the term doesn't need
+  additional explanation.
+* `references`: A list of pages that are relevant to this term. If you
+  are proposing a new term or modifying an existing term, add the current
+  page to this list. If the current page is relevant to a term, but none of
+  the term's other fields need to change, output the other fields as-is and
+  add the current page to the `references` list.
+
+Extra guidelines provided by the user:
+
+$guidelines

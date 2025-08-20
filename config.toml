@@ -1,2 +1,12 @@
 "repo" = "sso://pigweed/pigweed/pigweed"
 "glossary" = "docs/sphinx/glossary.rst"
+"guidelines" = '''
+* The intended audience of the Pigweed glossary are software engineers working
+  in downstream projects that depend on Pigweed.
+* The glossary must only cover core concepts.
+* Do not create glossary terms for Pigweed modules.
+* Do not create glossary terms for internal concepts that only apply to the
+  upstream Pigweed repository.
+* Do not create glossary terms for API items such as interfaces, build targets,
+  helpers, utilities, or backends.
+'''
