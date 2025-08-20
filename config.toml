@@ -10,3 +10,4 @@
 * Do not create glossary terms for API items such as interfaces, build targets,
   helpers, utilities, or backends.
 '''
+"ignore" = []
