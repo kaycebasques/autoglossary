@@ -13,7 +13,7 @@ import tomlkit
 
 
 REPO_NAME = "repo"
-CHECKPOINTS_FILE = "checkpoint.json"
+CHECKPOINTS_FILE = "checkpoints.json"
 GLOSSARY_FILE = "glossary.json"
 
 
