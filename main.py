@@ -4,6 +4,7 @@ from threading import Thread
 from typing_extensions import TypedDict
 import glob
 import json
+import shutil
 import subprocess
 import sys
 
@@ -117,6 +118,15 @@ def populate(template, doc, glossary, guidelines):
     return results
 
 
+def should_ignore(doc, paths):
+    ignore = False
+    for path in paths:
+        path = f"{REPO_NAME}/{path}"
+        if doc.startswith(path):
+            ignore = True
+    return ignore
+
+
 def process(docs):
     template = load_template()
     checkpoints = get_checkpoints()
@@ -126,10 +136,17 @@ def process(docs):
     for doc in docs:
         if doc in checkpoints:
             continue
+        if should_ignore(doc, config["ignore"]):
+            print(f"ignoring {doc}")
+            continue
+        if doc == f"{REPO_NAME}/{config['glossary']}":
+            continue
         print("=" * len(doc))
         print(doc)
         print("=" * len(doc))
         terms = populate(template, doc, glossary, guidelines)
+        if terms is None:
+            continue
         for term in terms:
             glossary[term["id"]] = {
                 "title": term["title"],
